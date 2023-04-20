@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tech.ada.mercado.exceptions.NotFoundException;
 import tech.ada.mercado.model.Mercado;
 import tech.ada.mercado.service.MercadoService;
 
@@ -29,7 +30,7 @@ public class MercadoController {
     public Mono<ResponseEntity<Mercado>> update(@RequestBody Mercado mercado, @RequestParam String id){
         return service.update(mercado, id)
                 .map(m -> ResponseEntity.ok().body(m))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+                .switchIfEmpty(Mono.error(NotFoundException::new));
     }
 
     @GetMapping
@@ -45,14 +46,14 @@ public class MercadoController {
     public Mono<ResponseEntity<Mercado>> findById(@PathVariable String id){
         return service.findById(id)
                 .map(m -> ResponseEntity.ok().body(m))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+                .switchIfEmpty(Mono.error(NotFoundException::new));
     }
 
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> delete(@PathVariable String id){
         return service.delete(id)
                 .then(Mono.just(ResponseEntity.ok().<Void>build()))
-                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
-                .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()));
+                .switchIfEmpty(Mono.error(NotFoundException::new))
+                .onErrorResume(e -> Mono.error(InternalError::new));
     }
 }
